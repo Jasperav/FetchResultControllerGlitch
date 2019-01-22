@@ -1,7 +1,7 @@
 import CoreData
 import UIKit
 
-class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITableViewDataSource {
+class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITableViewDataSource, UITableViewDelegate {
     
     let tableView = MyTableView()
     let resultController = ViewController.createResultController()
@@ -15,6 +15,7 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
             
             x.something = randomString(length: i + 1)
             x.date = Date()
+            x.height = Float.random(in: 50...100)
         }
         
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { (_) in
@@ -22,26 +23,24 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
             
             x.something = self.randomString(length: Int.random(in: 10...50))
             x.date = Date()
+            x.height = Float.random(in: 50...100)
         }
         
         resultController.delegate = self
         
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
-        tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
-        tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
-        tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
+        tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
+        tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor).isActive = true
+        tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor).isActive = true
+        tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
         
+        tableView.delegate = self
         tableView.dataSource = self
-        tableView.estimatedRowHeight = 50
-        tableView.rowHeight = 50
+        tableView.estimatedRowHeight = 75
+        
         
         try! resultController.performFetch()
-    }
-    
-    public func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        tableView.beginUpdates()
     }
     
     public func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
@@ -54,8 +53,12 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
             tableView.deleteRows(at: [indexPath!], with: .automatic)
             tableView.insertRows(at: [newIndexPath!], with: .automatic)
         case .update:
-            tableView.reloadRows(at: [indexPath!], with: .automatic)
+            tableView.moveRow(at: indexPath!, to: newIndexPath!)
         }
+    }
+    
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        tableView.beginUpdates()
     }
     
     public func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
@@ -66,11 +69,15 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
         return resultController.fetchedObjects?.count ?? 0
     }
     
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return CGFloat(resultController.object(at: indexPath).height)
+    }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! MyTableViewCell
         
         cell.textLabel?.text = resultController.object(at: indexPath).something
-        
+
         return cell
     }
 
