@@ -39,7 +39,6 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
         tableView.dataSource = self
         tableView.estimatedRowHeight = 75
         
-        
         try! resultController.performFetch()
     }
     
@@ -62,7 +61,24 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
     }
     
     public func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        tableView.endUpdates()
+        let currentSize = tableView.contentSize.height
+        
+        UIView.performWithoutAnimation {
+            tableView.endUpdates()
+            
+            let newSize = tableView.contentSize.height
+            let correctedY = tableView.contentOffset.y + newSize - currentSize
+            
+            print("Will apply an corrected Y value of: \(correctedY)")
+            tableView.setContentOffset(CGPoint(x: 0,
+                                               y: correctedY),
+                                       animated: false)
+            print("Corrected to: \(correctedY)")
+        }
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        print("Scrolled to: \(scrollView.contentOffset.y)")
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -77,10 +93,10 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! MyTableViewCell
         
         cell.textLabel?.text = resultController.object(at: indexPath).something
-
+        
         return cell
     }
-
+    
     
     private static func createResultController() -> NSFetchedResultsController<SomeEntity> {
         let fetchRequest: NSFetchRequest<SomeEntity> = SomeEntity.fetchRequest()
