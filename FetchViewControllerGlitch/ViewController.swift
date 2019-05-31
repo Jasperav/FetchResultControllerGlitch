@@ -5,6 +5,7 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
     
     let tableView = MyTableView()
     let resultController = ViewController.createResultController()
+    var inserts = [IndexPath]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,7 +19,7 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
             x.height = Float.random(in: 50...100)
         }
         
-        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { (_) in
+        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { (_) in
             let x = SomeEntity(context: CoreDataContext.persistentContainer.viewContext)
             
             x.something = self.randomString(length: Int.random(in: 10...50))
@@ -45,30 +46,25 @@ class ViewController: UIViewController, NSFetchedResultsControllerDelegate, UITa
     public func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         switch type {
         case .insert:
-            tableView.insertRows(at: [newIndexPath!], with: .automatic)
-        case .delete:
-            tableView.deleteRows(at: [indexPath!], with: .automatic)
-        case .move:
-            tableView.deleteRows(at: [indexPath!], with: .automatic)
-            tableView.insertRows(at: [newIndexPath!], with: .automatic)
-        case .update:
-            tableView.moveRow(at: indexPath!, to: newIndexPath!)
+            inserts.append(newIndexPath!)
+        default:
+            fatalError()
         }
     }
-    
-    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        tableView.beginUpdates()
-    }
-    
+
     public func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         let currentSize = tableView.contentSize.height
-        
+
         UIView.performWithoutAnimation {
-            tableView.endUpdates()
+            tableView.performBatchUpdates({
+                tableView.insertRows(at: inserts, with: .automatic)
+            })
             
+            inserts.removeAll()
+            self.view.layoutIfNeeded()
             let newSize = tableView.contentSize.height
             let correctedY = tableView.contentOffset.y + newSize - currentSize
-            
+
             print("Will apply an corrected Y value of: \(correctedY)")
             tableView.setContentOffset(CGPoint(x: 0,
                                                y: correctedY),
